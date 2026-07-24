@@ -1,0 +1,156 @@
+{
+  "companies": [
+    {
+      "rut": "76.123.456-7",
+      "name": "Empresa Ejemplo Ltda.",
+      "started_operations": "2010-05-15",
+      "giro": "Comercio al por menor de artículos de oficina"
+    },
+    {
+      "rut": "76.765.432-1",
+      "name": "Otra Empresa SpA",
+      "started_operations": null,
+      "giro": "Servicios de consultoría empresarial"
+    },
+    {
+      "rut": "77.234.567-8",
+      "name": "Comercial Los Andes S.A.",
+      "started_operations": "2012-11-02",
+      "giro": "Distribución mayorista de alimentos"
+    },
+    {
+      "rut": "78.345.678-9",
+      "name": "Transportes del Sur Ltda.",
+      "started_operations": "2008-03-27",
+      "giro": "Transporte terrestre de carga"
+    },
+    {
+      "rut": "79.456.789-0",
+      "name": "Servicios Financieros Pacífico SpA",
+      "started_operations": "2016-09-14",
+      "giro": "Asesoría y planificación financiera"
+    },
+    {
+      "rut": "80.567.890-1",
+      "name": "Tech Store Chile SpA",
+      "started_operations": "2019-01-08",
+      "giro": "Venta de productos tecnológicos"
+    },
+    {
+      "rut": "81.678.901-2",
+      "name": "Deportes y Más S.A.",
+      "started_operations": "2015-07-19",
+      "giro": "Venta de artículos deportivos"
+    },
+    {
+      "rut": "82.789.012-3",
+      "name": "Moda Urbana Ltda.",
+      "started_operations": "2017-04-30",
+      "giro": "Venta de ropa y accesorios"
+    },
+    {
+      "rut": "83.890.123-4",
+      "name": "Hogar y Cocina SpA",
+      "started_operations": "2014-12-01",
+      "giro": "Venta de artículos para el hogar"
+    },
+    {
+      "rut": "84.901.234-5",
+      "name": "Audio Premium Chile S.A.",
+      "started_operations": "2018-06-22",
+      "giro": "Venta de equipos de audio"
+    }
+  ],
+  "invoices": {
+    "inv_84f64445": {
+      "id": "inv_84f64445",
+      "order_id": "ord_612e80da",
+      "invoice_number": "SII-3F64EAEE20",
+      "seller_rut": "81.678.901-2",
+      "total": 29.99,
+      "status": 0,
+      "created_at": "2026-07-03T23:59:37.020684+00:00"
+    },
+    "inv_b22c22ee": {
+      "id": "inv_b22c22ee",
+      "order_id": "ord_15ca1dbe",
+      "invoice_number": "SII-DAE60F0664",
+      "seller_rut": "84.901.234-5",
+      "total": 249.99,
+      "status": 0,
+      "created_at": "2026-07-04T00:00:54.060596+00:00"
+    },
+    "inv_50281268": {
+      "id": "inv_50281268",
+      "order_id": "ord_a81b30fd",
+      "invoice_number": "SII-810D207EDD",
+      "seller_rut": "81.678.901-2",
+      "total": 59.98,
+      "status": 0,
+      "created_at": "2026-07-07T21:33:29.430595+00:00"
+    },
+    "inv_495b35ab": {
+      "id": "inv_495b35ab",
+      "order_id": "ord_60d1b45c",
+      "invoice_number": "SII-0C7684856F",
+      "seller_rut": "80.567.890-1",
+      "total": 699.99,
+      "status": 0,
+      "created_at": "2026-07-13T14:56:17.946932+00:00"
+    },
+    "inv_ba57023c": {
+      "id": "inv_ba57023c",
+      "order_id": "ord_10a93a9b",
+      "invoice_number": "SII-F8EA2D4CE4",
+      "seller_rut": "82.789.012-3",
+      "total": 59.99,
+      "status": 0,
+      "created_at": "2026-07-13T14:58:31.529204+00:00"
+    },
+    "inv_6f17bee9": {
+      "id": "inv_6f17bee9",
+      "order_id": "ord_8dcccbfd",
+      "invoice_number": "SII-883BAAFF22",
+      "seller_rut": "81.678.901-2",
+      "total": 29.99,
+      "status": 0,
+      "created_at": "2026-07-17T15:59:16.649023+00:00"
+    },
+    "inv_44ba5c19": {
+      "id": "inv_44ba5c19",
+      "order_id": "ord_4dee2c96",
+      "invoice_number": "SII-D4DECE8DC5",
+      "seller_rut": "81.678.901-2",
+      "total": 34.99,
+      "status": 0,
+      "created_at": "2026-07-17T22:40:35.196489+00:00"
+    },
+    "inv_49f0a59d": {
+      "id": "inv_49f0a59d",
+      "order_id": "ord_ca55d50b",
+      "invoice_number": "SII-2E52D894B4",
+      "seller_rut": "83.890.123-4",
+      "total": 24.99,
+      "status": 0,
+      "created_at": "2026-07-17T22:48:06.621551+00:00"
+    },
+    "inv_9e9fea18": {
+      "id": "inv_9e9fea18",
+      "order_id": "ord_73106aee",
+      "invoice_number": "SII-B33BFB465E",
+      "seller_rut": "84.901.234-5",
+      "total": 599.98,
+      "status": 0,
+      "created_at": "2026-07-20T19:55:48.073053+00:00"
+    },
+    "inv_8d3fc482": {
+      "id": "inv_8d3fc482",
+      "order_id": "ord_154243f3",
+      "invoice_number": "SII-FF9F0DD2D6",
+      "seller_rut": "81.678.901-2",
+      "total": 129.99,
+      "status": 0,
+      "created_at": "2026-07-21T22:37:38.747583+00:00"
+    }
+  }
+}

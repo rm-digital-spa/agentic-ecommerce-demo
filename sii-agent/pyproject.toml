@@ -1,0 +1,15 @@
+[project]
+name = "sii-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "common",
+    "langfuse>=4.1.0",
+    "strands-agents-tools>=0.4.1",
+    "strands-agents[a2a,otel]>=1.29.0",
+]
+
+[tool.uv.sources]
+common = { path = "../common", editable = true }
