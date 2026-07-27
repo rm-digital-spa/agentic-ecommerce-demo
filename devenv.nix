@@ -41,6 +41,8 @@
       enable = true;
       bun.enable = true;
     };
+
+    opentofu.enable = true;
   };
   packages = [
     pkgs.lazysql
