@@ -22,7 +22,6 @@
   env.API_PORT = 8000;
   env.API_URL = "http://localhost:${builtins.toString config.env.API_PORT}";
 
-  scripts.login-aws.exec = "aws sso login --profile ${config.env.AWS_PROFILE}";
   scripts.start-ui.exec = ''
     cd $DEVENV_ROOT/web
     bun run dev

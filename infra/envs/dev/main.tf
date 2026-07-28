@@ -24,7 +24,7 @@ locals {
 
 
 resource "aws_ecr_repository" "repository" {
-  name = each.key
+  name = "agentic-ecommerce-demo/${each.key}"
   image_tag_mutability = "MUTABLE"
   force_delete = true
 
