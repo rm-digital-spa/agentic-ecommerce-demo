@@ -22,7 +22,11 @@ import api_client
 
 model = BedrockModel(
     region_name=os.getenv("AWS_REGION", "us-east-1"),
-    model_id=os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-haiku-4-5-20251001-v1:0"),
+    # The "us." prefix is the cross-region inference profile: this model is not
+    # available with plain on-demand throughput.
+    model_id=os.getenv(
+        "BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    ),
     max_tokens=4096,
 )
 

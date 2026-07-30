@@ -40,7 +40,11 @@ def sii_status_translator(status_code: int) -> str:
 
 model = BedrockModel(
     region_name="us-east-1",
-    model_id= os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-haiku-4-5-20251001-v1:0"),
+    # The "us." prefix is the cross-region inference profile: this model is not
+    # available with plain on-demand throughput.
+    model_id=os.getenv(
+        "BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    ),
     max_tokens=4096,
 )
 sii_mcp = MCPClient(lambda: streamable_http_client(MCP_URL))
