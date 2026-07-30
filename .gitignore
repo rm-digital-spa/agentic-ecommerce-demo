@@ -79,3 +79,7 @@ langfuse
 sessions
 
 .terraform
+
+# Scratch output from `tofu output -json`; must never be committed, or CI
+# redirections that append to it would produce invalid JSON.
+output.json
