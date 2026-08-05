@@ -22,6 +22,13 @@ locals {
   images = toset(["api", "ecommerce-agent", "sii-agent", "sii-mcp"])
 }
 
+data "aws_ecr_image" "ecr_image" {
+  repository_name = "agentic-ecommerce-demo/${each.key}"
+  image_tag = "latest"
+
+  for_each = local.images
+}
+
 
 resource "aws_ecr_repository" "repository" {
   name = "agentic-ecommerce-demo/${each.key}"
@@ -55,6 +62,65 @@ resource "aws_ecr_lifecycle_policy" "lifecycle_policy" {
 EOF
 }
 
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["bedrock-agentcore.amazonaws.com"]
+    }
+  }
+}
+
+// allow the role to pull images from ECR
+data "aws_iam_policy_document" "ecr_permissions" {
+  statement {
+    actions   = ["ecr:GetAuthorizationToken"]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "ecr:BatchGetImage",
+      "ecr:GetDownloadUrlForLayer"
+    ]
+    effect    = "Allow"
+    resources = [for r in aws_ecr_repository.repository : r.arn]
+  }
+}
+
+resource "aws_iam_role" "sii-mcp-role" {
+  name               = "ecommerce-agentcore-runtime-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_role_policy" "sii-mcp-role" {
+  name = "ecommerce-agentcore-runtime-policy"
+  role   = aws_iam_role.sii-mcp-role.id
+  policy = data.aws_iam_policy_document.ecr_permissions.json
+}
+
+resource "aws_bedrockagentcore_agent_runtime" "sii-mcp" {
+  agent_runtime_name = "ecommercesiimcp"
+
+  role_arn = aws_iam_role.sii-mcp-role.arn
+
+  agent_runtime_artifact {
+    container_configuration {
+      container_uri = "${data.aws_ecr_image.ecr_image["sii-mcp"].image_uri}"
+    }
+  }
+
+  protocol_configuration {
+    server_protocol = "MCP"
+  }
+
+  network_configuration {
+    network_mode = "PUBLIC"
+  }
+}
 
 output "ecr_repository_uris" {
   value = { for k, v in aws_ecr_repository.repository : k => v.repository_url }

@@ -1,7 +1,8 @@
 name: "Infra Deployment"
-# run-name: Infra Deployment (run name)
+# run-name: Infra Deployment (run name) test
 
 on:
+  workflow_call:
   push:
     paths:
       - 'infra/**'

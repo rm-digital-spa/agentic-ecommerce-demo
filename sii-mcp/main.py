@@ -34,9 +34,14 @@ def _save_sii_data(data: dict) -> None:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+# Stateless mode is required on AgentCore Runtime, which load-balances requests
+# across instances: nothing may depend on server-side session state.
+STATELESS_HTTP = os.getenv("MCP_STATELESS_HTTP", "true").lower() == "true"
+
 mcp = FastMCP(
     name="sii-mcp",
     instructions="Tool to get information about SII (Servicio de Impuestos Internos). Manages companies/sellers and invoices.",
+    stateless_http=STATELESS_HTTP,
 )
 
 

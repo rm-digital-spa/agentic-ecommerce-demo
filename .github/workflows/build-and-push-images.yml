@@ -95,3 +95,7 @@ jobs:
           # or move the cache to ECR (type=registry).
           cache-from: type=gha,scope=${{ matrix.image.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
+
+  UpdateContainers:
+    needs: Build
+    uses: $/.github/workflows/infra-deployment.yml
