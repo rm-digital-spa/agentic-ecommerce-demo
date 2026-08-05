@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   GetImages:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     outputs:
       images: ${{ steps.get-images.outputs.images }}
     steps:
@@ -58,7 +58,7 @@ jobs:
           echo "images=$images" >> "$GITHUB_OUTPUT"
 
   Build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     needs: GetImages
     name: Build (${{ matrix.image.name }})
     strategy:
@@ -74,6 +74,8 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - uses: aws-actions/amazon-ecr-login@v2
       - uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/arm64,linux/amd64
       - name: Build and Push Image
         uses: docker/build-push-action@v6
         with:
