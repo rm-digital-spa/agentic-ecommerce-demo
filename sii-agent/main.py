@@ -8,12 +8,14 @@ from strands.tools.mcp import MCPClient
 from strands.multiagent.a2a import A2AServer
 from mcp.client.streamable_http import streamable_http_client
 from langfuse import get_client
+from pydantic import BaseModel
 import uvicorn
 from common.agenthooks import NamedAgentHook
 
 
 
 MCP_URL = os.getenv("SII_MCP_URL", "http://localhost:8001/mcp")
+# 8002 locally (devenv), 8080 in the image: AgentCore Runtime requires 8080.
 AGENT_PORT = int(os.getenv("SII_AGENT_PORT", 8002))
 HOST = os.getenv("HOST", "0.0.0.0")
 
@@ -81,5 +83,33 @@ with sii_mcp:
     app = a2a_server.to_fastapi_app()
 
     app.get("/health")(lambda: {"status": "healthy", "service": "sii-agent"})
+
+    # ---- AgentCore Runtime contract ----
+    # AgentCore health-checks GET /ping and dispatches work to POST
+    # /invocations. Both live alongside the A2A routes on the same app, so the
+    # agent keeps working over A2A locally (devenv) while satisfying AgentCore
+    # once deployed.
+
+    class InvocationPayload(BaseModel):
+        # AgentCore forwards the caller's body verbatim; accept either key so
+        # this works with the conventional {"prompt": ...} and with our own
+        # {"query": ...}.
+        prompt: str | None = None
+        query: str | None = None
+
+        def text(self) -> str:
+            value = self.prompt or self.query
+            if not value:
+                raise ValueError("Either 'prompt' or 'query' is required.")
+            return value
+
+    @app.get("/ping")
+    def ping():
+        return {"status": "healthy", "service": "sii-agent"}
+
+    @app.post("/invocations")
+    def invocations(payload: InvocationPayload):
+        response = agent(payload.text())
+        return {"result": str(response)}
 
     uvicorn.run(app, host=HOST, port=AGENT_PORT)

@@ -18,14 +18,13 @@ from fastapi.responses import StreamingResponse
 from langfuse import get_client, observe, propagate_attributes
 from pydantic import BaseModel
 from strands import tool
-from strands.agent.a2a_agent import A2AAgent
 
 from agent import build_ecommerce_agent, get_session
+from sii_transport import invoke_sii_agent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SII_AGENT_URL = os.getenv("SII_AGENT_URL", "http://localhost:8002")
 AGENT_PORT = int(os.getenv("ECOMMERCE_AGENT_PORT", 8080))
 HOST = os.getenv("HOST", "0.0.0.0")
 
@@ -36,15 +35,6 @@ else:
     print("Authentication failed. Please check your credentials and host.")
 
 app = FastAPI()
-
-sii_agent = None
-
-
-def start_sii_agent() -> A2AAgent:
-    global sii_agent
-    if sii_agent is None:
-        sii_agent = A2AAgent(endpoint=SII_AGENT_URL)
-    return sii_agent
 
 
 class UserPayload(BaseModel):
@@ -77,15 +67,13 @@ async def invocations(payload: InvocationPayload):
             if hasattr(langfuse, "update_current_trace"):
                 langfuse.update_current_trace(user_id=user["email"])
 
-            remote_sii_agent = start_sii_agent()
-
             @tool
             def sii_assistant(query: str) -> str:
+                """Ask the SII agent about companies and invoices."""
                 try:
-                    sii_agent_response = remote_sii_agent(query)
-                    return str(sii_agent_response)
+                    return invoke_sii_agent(query)
                 except Exception as e:
-                    logger.error(f"Error invoking agent: {e}")
+                    logger.error(f"Error invoking SII agent: {e}")
                     return "Error invoking agent."
 
             agent = build_ecommerce_agent(
