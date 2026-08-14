@@ -284,6 +284,16 @@ def list_invoices() -> list[dict]:
     return invoices
 
 
+# This is just a test. Delete whenever possible.
+@mcp.tool(
+    description="""
+    Get the taxes for a company
+    Returns a the taxes a company has to pay in a month
+    """
+)
+def get_taxes():
+    pass
+
 if __name__ == "__main__":
     mcp.run(
         transport="http",
