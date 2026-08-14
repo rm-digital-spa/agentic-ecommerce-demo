@@ -13,9 +13,12 @@ on:
       - 'common/**'
       - '.github/workflows/build-and-push-images.yml'
 
-concurrency:
-  group: build-images-${{ github.ref }}
-  cancel-in-progress: true
+# NOTE: concurrency is declared per job, never at workflow level. A
+# workflow-level group with cancel-in-progress cancels the *whole run*,
+# including the jobs of the reusable workflow called by UpdateContainers —
+# which would kill a `tofu apply` mid-flight and orphan the state lock. Only
+# the build jobs are cancellable; the deploy phase governs its own
+# concurrency inside infra-deployment.yml.
 
 env:
   AWS_REGION: us-east-1
@@ -28,6 +31,9 @@ permissions:
 jobs:
   GetImages:
     runs-on: ubuntu-24.04-arm
+    concurrency:
+      group: build-getimages-${{ github.ref }}
+      cancel-in-progress: true
     outputs:
       images: ${{ steps.get-images.outputs.images }}
     steps:
@@ -61,6 +67,11 @@ jobs:
     runs-on: ubuntu-24.04-arm
     needs: GetImages
     name: Build (${{ matrix.image.name }})
+    # Keyed per component: a superseded build of `api` cancels only the older
+    # `api` build, not the three siblings running alongside it.
+    concurrency:
+      group: build-image-${{ matrix.image.name }}-${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       # One broken component shouldn't cancel the other three.
       fail-fast: false

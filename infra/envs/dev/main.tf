@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket = "agentic-ecommerce-demo-infra-state"
-    region = "us-east-1"
-    key = "dev/terraform.tfstate"
+    bucket       = "agentic-ecommerce-demo-infra-state"
+    region       = "us-east-1"
+    key          = "dev/terraform.tfstate"
     use_lockfile = true
   }
 
@@ -22,27 +22,19 @@ locals {
   images = toset(["api", "ecommerce-agent", "sii-agent", "sii-mcp"])
 }
 
-data "aws_ecr_image" "ecr_image" {
-  repository_name = "agentic-ecommerce-demo/${each.key}"
-  image_tag = "latest"
-
-  for_each = local.images
-}
-
-
 resource "aws_ecr_repository" "repository" {
-  name = "agentic-ecommerce-demo/${each.key}"
+  name                 = "agentic-ecommerce-demo/${each.key}"
   image_tag_mutability = "MUTABLE"
-  force_delete = true
+  force_delete         = true
 
   for_each = local.images
 }
 
 # only keep the latest 5 images in the repository
 resource "aws_ecr_lifecycle_policy" "lifecycle_policy" {
-  for_each = aws_ecr_repository.repository
+  for_each   = aws_ecr_repository.repository
   repository = aws_ecr_repository.repository[each.key].name
-  policy = <<EOF
+  policy     = <<EOF
 {
   "rules": [
     {
@@ -60,6 +52,20 @@ resource "aws_ecr_lifecycle_policy" "lifecycle_policy" {
   ]
 }
 EOF
+}
+
+# Iterating over the repository resource (rather than over local.images with a
+# literal name) does two things: it single-sources the naming convention, and
+# it creates the dependency edge so Terraform never tries to read an image
+# before its repository exists.
+#
+# The `latest` tag is the promotion pointer; what we consume is its immutable
+# digest, so a new push produces a real diff and deployments stay pinned.
+data "aws_ecr_image" "ecr_image" {
+  for_each = aws_ecr_repository.repository
+
+  repository_name = each.value.name
+  image_tag       = "latest"
 }
 
 data "aws_iam_policy_document" "assume_role" {
@@ -97,7 +103,7 @@ resource "aws_iam_role" "sii-mcp-role" {
 }
 
 resource "aws_iam_role_policy" "sii-mcp-role" {
-  name = "ecommerce-agentcore-runtime-policy"
+  name   = "ecommerce-agentcore-runtime-policy"
   role   = aws_iam_role.sii-mcp-role.id
   policy = data.aws_iam_policy_document.ecr_permissions.json
 }
@@ -109,7 +115,7 @@ resource "aws_bedrockagentcore_agent_runtime" "sii-mcp" {
 
   agent_runtime_artifact {
     container_configuration {
-      container_uri = "${data.aws_ecr_image.ecr_image["sii-mcp"].image_uri}"
+      container_uri = data.aws_ecr_image.ecr_image["sii-mcp"].image_uri
     }
   }
 
