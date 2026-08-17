@@ -11,6 +11,7 @@ Plus session endpoints so the API can read/delete conversation history
 import json
 import logging
 import os
+from uuid import uuid4
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -30,11 +31,21 @@ HOST = os.getenv("HOST", "0.0.0.0")
 
 langfuse = get_client()
 if langfuse.auth_check():
-    print("Langfuse client is authenticated and ready!")
+    print("[LANGFUSE] Langfuse client is authenticated and ready!")
 else:
-    print("Authentication failed. Please check your credentials and host.")
+    print("[LANGFUSE] Authentication failed. Please check your credentials and host.")
 
 app = FastAPI()
+
+
+# Stand-in used when the caller supplies no user — e.g. the AgentCore console's
+# smoke-test payload. Real conversations come from the API, which always sends
+# the authenticated customer.
+ANONYMOUS_USER = {
+    "id": "anonymous",
+    "name": "Anonymous",
+    "email": "anonymous@example.com",
+}
 
 
 class UserPayload(BaseModel):
@@ -44,9 +55,26 @@ class UserPayload(BaseModel):
 
 
 class InvocationPayload(BaseModel):
-    query: str
-    session_id: str
-    user: UserPayload
+    # AgentCore forwards the caller's body verbatim, and its console sends
+    # {"prompt": ...}, so accept that alongside our own {"query": ...}.
+    prompt: str | None = None
+    query: str | None = None
+    # Optional so a bare prompt is enough to smoke-test the deployed runtime;
+    # the API supplies both for real conversations.
+    session_id: str | None = None
+    user: UserPayload | None = None
+
+    def text(self) -> str:
+        value = self.prompt or self.query
+        if not value:
+            raise ValueError("Either 'prompt' or 'query' is required.")
+        return value
+
+    def resolved_user(self) -> dict[str, str]:
+        return self.user.model_dump() if self.user else dict(ANONYMOUS_USER)
+
+    def resolved_session_id(self) -> str:
+        return self.session_id or f"session-{uuid4().hex[:12]}"
 
 
 @app.get("/ping")
@@ -57,12 +85,18 @@ def ping():
 @observe()
 @app.post("/invocations")
 async def invocations(payload: InvocationPayload):
-    user = payload.user.model_dump()
+    try:
+        query = payload.text()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    user = payload.resolved_user()
+    session_id = payload.resolved_session_id()
 
     async def event_generator():
         # Keep Langfuse context active for the full lifecycle of streamed events.
         with propagate_attributes(
-            user_id=user["email"], session_id=payload.session_id
+            user_id=user["email"], session_id=session_id
         ):
             if hasattr(langfuse, "update_current_trace"):
                 langfuse.update_current_trace(user_id=user["email"])
@@ -78,13 +112,13 @@ async def invocations(payload: InvocationPayload):
 
             agent = build_ecommerce_agent(
                 tools=[sii_assistant],
-                session_id=payload.session_id,
+                session_id=session_id,
                 user=user,
             )
             logger.info("Ecommerce agent initialized: %s", agent.name)
 
             try:
-                async for event in agent.stream_async(payload.query):
+                async for event in agent.stream_async(query):
                     # Emit one JSON object per line (NDJSON): agent messages,
                     # tool calls and tool responses.
                     if isinstance(event, dict) and "message" in event:

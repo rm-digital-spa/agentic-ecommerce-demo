@@ -68,6 +68,10 @@ data "aws_ecr_image" "ecr_image" {
   image_tag       = "latest"
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect  = "Allow"
@@ -95,32 +99,85 @@ data "aws_iam_policy_document" "ecr_permissions" {
     effect    = "Allow"
     resources = [for r in aws_ecr_repository.repository : r.arn]
   }
+
+  statement {
+    sid = "invokebedrock"
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream"
+    ]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+
+  # AgentCore owns the log group itself (there is no logging argument on the
+  # runtime resource); what gates it is whether this role may write there.
+  # Like S3, CloudWatch Logs has two ARN shapes and the actions split across
+  # them: CreateLogGroup acts on the group, the rest on the streams inside it.
+  statement {
+    sid = "createruntimeloggroup"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:DescribeLogStreams"
+    ]
+    effect = "Allow"
+    resources = [
+      "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*"
+    ]
+  }
+
+  statement {
+    sid = "writeruntimelogs"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    effect = "Allow"
+    resources = [
+      "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*"
+    ]
+  }
 }
 
-resource "aws_iam_role" "sii-mcp-role" {
+resource "aws_iam_role" "agent_runtime_role" {
   name               = "ecommerce-agentcore-runtime-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_iam_role_policy" "sii-mcp-role" {
   name   = "ecommerce-agentcore-runtime-policy"
-  role   = aws_iam_role.sii-mcp-role.id
+  role   = aws_iam_role.agent_runtime_role.id
   policy = data.aws_iam_policy_document.ecr_permissions.json
 }
 
-resource "aws_bedrockagentcore_agent_runtime" "sii-mcp" {
-  agent_runtime_name = "ecommercesiimcp"
 
-  role_arn = aws_iam_role.sii-mcp-role.arn
+locals {
+  # api image should be use for agent core
+  agentcore_images = toset([for image_name in local.images : image_name if !strcontains(image_name, "api")])
+}
+
+resource "aws_bedrockagentcore_agent_runtime" "agent_runtime" {
+
+  for_each = local.agentcore_images
+
+  agent_runtime_name = replace("ecommerce${each.value}", "-", "")
+
+  role_arn = aws_iam_role.agent_runtime_role.arn
 
   agent_runtime_artifact {
     container_configuration {
-      container_uri = data.aws_ecr_image.ecr_image["sii-mcp"].image_uri
+      container_uri = data.aws_ecr_image.ecr_image[each.value].image_uri
     }
   }
 
+  environment_variables = {
+    SII_AGENT_PORT : 8080
+    ECOMMERCE_AGENT_PORT : 8080
+  }
+
   protocol_configuration {
-    server_protocol = "MCP"
+    // Only sii-mcp will use MCP protocol
+    server_protocol = each.value == "sii-mcp" ? "MCP" : "HTTP"
   }
 
   network_configuration {
