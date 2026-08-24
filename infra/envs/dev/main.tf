@@ -152,11 +152,33 @@ resource "aws_iam_role_policy" "sii-mcp-role" {
 
 
 locals {
-  # api image should be use for agent core
-  agentcore_images = toset([for image_name in local.images : image_name if !strcontains(image_name, "api")])
+  # api and sii-mcp image should not be use for agent core HTTP runtime
+  agentcore_images = toset([for image_name in local.images : image_name if !strcontains(image_name, "api") && !strcontains(image_name, "sii-mcp")])
 }
 
-resource "aws_bedrockagentcore_agent_runtime" "agent_runtime" {
+# must be declared outside each block as it will be referenced later
+resource "aws_bedrockagentcore_agent_runtime" "sii_mcp" {
+
+  agent_runtime_name = "ecommercesiimcp"
+
+  role_arn = aws_iam_role.agent_runtime_role.arn
+
+  agent_runtime_artifact {
+    container_configuration {
+      container_uri = data.aws_ecr_image.ecr_image["sii-mcp"].image_uri
+    }
+  }
+
+  protocol_configuration {
+    server_protocol ="MCP"
+  }
+
+  network_configuration {
+    network_mode = "PUBLIC"
+  }
+}
+
+resource "aws_bedrockagentcore_agent_runtime" "http_agent_runtime" {
 
   for_each = local.agentcore_images
 
@@ -173,15 +195,74 @@ resource "aws_bedrockagentcore_agent_runtime" "agent_runtime" {
   environment_variables = {
     SII_AGENT_PORT : 8080
     ECOMMERCE_AGENT_PORT : 8080
+
+    #  example url for agentcore mcp - https://bedrock-agentcore.us-west-2.amazonaws.com/runtimes/{encoded_arn}/invocations?qualifier=DEFAULT"
+    SII_MCP_URL = each.value == "sii-agent" ? "https://bedrock-agentcore.us-west-2.amazonaws.com/runtimes/${urlencode(aws_bedrockagentcore_agent_runtime.sii_mcp.agent_runtime_arn)}/invocations?qualifier=DEFAULT" : ""
   }
 
   protocol_configuration {
     // Only sii-mcp will use MCP protocol
-    server_protocol = each.value == "sii-mcp" ? "MCP" : "HTTP"
+    # server_protocol = each.value == "sii-mcp" ? "MCP" : "HTTP"
+    server_protocol = "HTTP"
   }
 
   network_configuration {
     network_mode = "PUBLIC"
+  }
+}
+
+resource "aws_s3_bucket" "kb_bucket" {
+
+}
+
+
+data "aws_iam_policy_document" "ecommerceagent_user_memory_role_permissions" {
+  statement {
+    sid = "CloudWatchWritePermissionStatement"
+    actions   = ["cloudwatch:PutMetricData"]
+    effect    = "Allow"
+    resources = ["*"]
+
+    condition {
+      test = "StringEquals"
+      variable =  "cloudwatch:namespace"
+      values = ["AWS/Bedrock/KnowledgeBases"]
+    }
+  }
+
+  statement {
+    sid = "S3ListBucketStatement"
+    actions   = ["s3:ListBucket"]
+    effect    = "Allow"
+    resources = [
+      #TODO: Need a bucket arn here
+      # "*"
+      aws_s3_bucket.kb_bucket.arn
+    ]
+
+    condition {
+      test = "StringEquals"
+      variable =  "cloudwatch:namespace"
+      values = ["AWS/Bedrock/KnowledgeBases"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ecommerceagent_user_memory_role" {
+  name               = "ecommerceagent_user_memory_role"
+  assume_role_policy = data.aws_iam_policy_document.ecommerceagent_user_memory_role_permissions.json
+}
+
+resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory" {
+  name     = "ecommerceagent_user_memory"
+  role_arn = aws_iam_role.ecommerceagent_user_memory_role.arn
+
+  knowledge_base_configuration {
+    type = "MANAGED"
+
+    managed_knowledge_base_configuration {
+      embedding_model_type = "MANAGED"
+    }
   }
 }
 
