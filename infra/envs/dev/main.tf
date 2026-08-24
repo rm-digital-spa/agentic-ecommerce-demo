@@ -212,7 +212,7 @@ resource "aws_bedrockagentcore_agent_runtime" "http_agent_runtime" {
 }
 
 resource "aws_s3_bucket" "kb_bucket" {
-
+  bucket = "kb-bucket-${data.aws_caller_identity.current.account_id}"
 }
 
 
@@ -269,3 +269,9 @@ resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory" {
 output "ecr_repository_uris" {
   value = { for k, v in aws_ecr_repository.repository : k => v.repository_url }
 }
+
+
+# moved {
+#   from = aws_bedrockagentcore_agent_runtime.http_agent_runtime["sii-mcp"]
+#   to = aws_bedrockagentcore_agent_runtime.sii_mcp
+# }
