@@ -5,17 +5,17 @@ on:
   workflow_call:
   push:
     paths:
-      - 'infra/**'
-      - '.github/workflows/infra-deployment.yml'
-      # tofu comes from the devenv shell, so its version is a dependency too
-      - 'devenv.nix'
-      - 'devenv.lock'
+      - "infra/**"
+      - ".github/workflows/infra-deployment.yml"
+      # tofu comes from the minimal CI shell, so that is the dependency to
+      # watch — not the root devenv.nix, which CI no longer evaluates.
+      - "ci/**"
 
 env:
   AWS_REGION: us-east-1
 permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: read    # This is required for actions/checkout
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
 jobs:
   Plan:
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         with:
           name: devenv
       - name: Install devenv.sh
@@ -39,10 +39,10 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Tofu Init
         run: |
-          devenv shell tofu -chdir=infra/envs/dev init -input=false
+          cd ci && devenv shell -- tofu -chdir="$GITHUB_WORKSPACE/infra/envs/dev" init -input=false
       - name: Tofu Plan
         run: |
-              devenv shell tofu -chdir=infra/envs/dev plan -input=false -out=plan.out
+          cd ci && devenv shell -- tofu -chdir="$GITHUB_WORKSPACE/infra/envs/dev" plan -input=false -out=plan.out
       - name: Upload Tofu Plan
         uses: actions/upload-artifact@v4
         with:
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v17
         with:
           name: devenv
       - name: Install devenv.sh
@@ -74,7 +74,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Tofu Init
         run: |
-          devenv shell tofu -chdir=infra/envs/dev init -input=false
+          cd ci && devenv shell -- tofu -chdir="$GITHUB_WORKSPACE/infra/envs/dev" init -input=false
       - name: Download Tofu Plan
         uses: actions/download-artifact@v4
         with:
@@ -82,4 +82,4 @@ jobs:
           path: infra/envs/dev
       - name: Tofu Apply
         run: |
-          devenv shell tofu -chdir=infra/envs/dev apply -input=false plan.out
+          cd ci && devenv shell -- tofu -chdir="$GITHUB_WORKSPACE/infra/envs/dev" apply -input=false plan.out

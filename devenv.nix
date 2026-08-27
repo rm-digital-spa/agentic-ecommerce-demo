@@ -45,7 +45,7 @@
   };
   packages = [
     pkgs.lazysql
-    pkgs.gobang
+    pkgs.rainfrog
   ];
 
   process.manager.implementation = "process-compose";

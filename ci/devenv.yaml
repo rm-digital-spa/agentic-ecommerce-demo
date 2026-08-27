@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
+# Same input as the root devenv.yaml so CI resolves the same nixpkgs, and
+# therefore the same tofu version, as local development.
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling

@@ -50,14 +50,14 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Tofu Init
         run: |
-          devenv shell tofu -chdir=infra/envs/dev init -input=false
+          cd ci && devenv shell -- tofu -chdir="$GITHUB_WORKSPACE/infra/envs/dev" init -input=false
       - name: Get Images to Build
         id: get-images
         run: |
           # Emit [{name, uri}, ...]. The map key is the component name, which
           # is also the directory holding its Dockerfile — so the build reads
           # the name from the key instead of parsing it out of the URI.
-          images=$(devenv shell tofu -chdir=infra/envs/dev output -json \
+          images=$(cd ci && devenv shell -- tofu -chdir="$GITHUB_WORKSPACE/infra/envs/dev" output -json \
             | jq -rc '.ecr_repository_uris.value
                       | to_entries
                       | map({name: .key, uri: .value})')

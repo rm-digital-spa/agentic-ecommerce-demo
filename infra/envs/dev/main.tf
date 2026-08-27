@@ -78,7 +78,9 @@ data "aws_iam_policy_document" "assume_role" {
     actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
-      identifiers = ["bedrock-agentcore.amazonaws.com"]
+      identifiers = [
+        "bedrock-agentcore.amazonaws.com"
+      ]
     }
   }
 }
@@ -237,7 +239,7 @@ data "aws_iam_policy_document" "ecommerceagent_user_memory_role_permissions" {
     resources = [
       #TODO: Need a bucket arn here
       # "*"
-      aws_s3_bucket.kb_bucket.arn
+      "${aws_s3_bucket.kb_bucket.arn}"
     ]
 
     condition {
@@ -250,7 +252,13 @@ data "aws_iam_policy_document" "ecommerceagent_user_memory_role_permissions" {
 
 resource "aws_iam_role" "ecommerceagent_user_memory_role" {
   name               = "ecommerceagent_user_memory_role"
-  assume_role_policy = data.aws_iam_policy_document.ecommerceagent_user_memory_role_permissions.json
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_role_policy" "ecommerceagent_user_memory_role_policy" {
+  name   = "ecommerceagent-user-memory-role-policy"
+  role   = aws_iam_role.ecommerceagent_user_memory_role.id
+  policy = data.aws_iam_policy_document.ecommerceagent_user_memory_role_permissions.json
 }
 
 resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory" {
