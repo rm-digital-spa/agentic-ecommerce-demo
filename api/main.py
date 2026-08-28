@@ -93,6 +93,12 @@ def home():
 # ==================== Auth ====================
 
 
+@app.get("/auth/me")
+def whoami(username: Annotated[str, Depends(verify_credentials)]):
+    """Validate HTTP Basic credentials. 401 when they are wrong."""
+    return {"username": username}
+
+
 class SignupPayload(BaseModel):
     name: str
     email: str

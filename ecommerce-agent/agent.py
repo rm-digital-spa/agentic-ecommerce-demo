@@ -338,13 +338,18 @@ def build_ecommerce_agent(
         user_preference_store = BedrockKnowledgeBaseStore(
             name="user_preferences",
             description="Long-term user preferences (theme, favorite categories, budget, etc.)",
+            # config={
+            #     "knowledge_base_id": BEDROCK_KB_ID,
+            #     "data_source_type": "S3",
+            #     "data_source_id": BEDROCK_KB_DATA_SOURCE_ID,
+            #     "s3": {"bucket": BEDROCK_KB_S3_BUCKET, "prefix": BEDROCK_KB_S3_PREFIX},
+            # },
+            # # Isolates each customer's memories via the KB metadata filter
             config={
                 "knowledge_base_id": BEDROCK_KB_ID,
+                "knowledge_base_type": "MANAGED",
                 "data_source_type": "S3",
-                "data_source_id": BEDROCK_KB_DATA_SOURCE_ID,
-                "s3": {"bucket": BEDROCK_KB_S3_BUCKET, "prefix": BEDROCK_KB_S3_PREFIX},
             },
-            # Isolates each customer's memories via the KB metadata filter
             scope=f"user-{user['id']}",
             writable=True,
         )

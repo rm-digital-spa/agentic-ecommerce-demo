@@ -274,6 +274,17 @@ resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory" {
   }
 }
 
+resource "aws_bedrockagent_data_source" "ecommerceagent_user_memory_data_source" {
+  knowledge_base_id = aws_bedrockagent_knowledge_base.ecommerceagent_user_memory.id
+  name              = "ecommerceagent_user_memory_data_source"
+  data_source_configuration {
+    type = "S3"
+    s3_configuration {
+      bucket_arn = aws_s3_bucket.kb_bucket.arn
+    }
+  }
+}
+
 output "ecr_repository_uris" {
   value = { for k, v in aws_ecr_repository.repository : k => v.repository_url }
 }

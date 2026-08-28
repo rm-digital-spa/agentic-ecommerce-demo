@@ -16,8 +16,9 @@ export async function POST(request: Request) {
   }
 
   const basic = Buffer.from(`${username}:${password}`).toString("base64");
-  const verifyResponse = await fetch(`${API_URL}/`, {
+  const verifyResponse = await fetch(`${API_URL}/auth/me`, {
     headers: { Authorization: `Basic ${basic}` },
+    cache: "no-store",
   });
 
   if (!verifyResponse.ok) {
