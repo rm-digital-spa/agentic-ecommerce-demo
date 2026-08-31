@@ -11,11 +11,19 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    awscc = {
+         source  = "hashicorp/awscc"
+         version = "~> 1.0"
+    }
   }
 }
 
 provider "aws" {
   # region = "us-east-1"
+}
+
+provider "awscc" {
+
 }
 
 locals {
@@ -261,21 +269,18 @@ resource "aws_iam_role_policy" "ecommerceagent_user_memory_role_policy" {
   policy = data.aws_iam_policy_document.ecommerceagent_user_memory_role_permissions.json
 }
 
-resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory" {
+resource "awscc_bedrock_knowledge_base" "ecommerceagent_user_memory" {
   name     = "ecommerceagent_user_memory"
   role_arn = aws_iam_role.ecommerceagent_user_memory_role.arn
 
-  knowledge_base_configuration {
+  knowledge_base_configuration = {
     type = "MANAGED"
-
-    managed_knowledge_base_configuration {
-      embedding_model_type = "MANAGED"
-    }
   }
 }
 
+
 resource "aws_bedrockagent_data_source" "ecommerceagent_user_memory_data_source" {
-  knowledge_base_id = aws_bedrockagent_knowledge_base.ecommerceagent_user_memory.id
+  knowledge_base_id = awscc_bedrock_knowledge_base.ecommerceagent_user_memory.id
   name              = "ecommerceagent_user_memory_data_source"
   data_source_configuration {
     type = "S3"
@@ -284,6 +289,34 @@ resource "aws_bedrockagent_data_source" "ecommerceagent_user_memory_data_source"
     }
   }
 }
+
+
+# resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory" {
+#   name     = "ecommerceagent_user_memory"
+#   role_arn = aws_iam_role.ecommerceagent_user_memory_role.arn
+
+#   knowledge_base_configuration {
+#     type = "VECTOR"
+
+#     # managed_knowledge_base_configuration {
+#     #   embedding_model_type = "MANAGED"
+#     # }
+#     # vector_knowledge_base_configuration {
+
+#     # }
+#   }
+# }
+
+# resource "aws_bedrockagent_data_source" "ecommerceagent_user_memory_data_source" {
+#   knowledge_base_id = aws_bedrockagent_knowledge_base.ecommerceagent_user_memory.id
+#   name              = "ecommerceagent_user_memory_data_source"
+#   data_source_configuration {
+#     type = "S3"
+#     s3_configuration {
+#       bucket_arn = aws_s3_bucket.kb_bucket.arn
+#     }
+#   }
+# }
 
 output "ecr_repository_uris" {
   value = { for k, v in aws_ecr_repository.repository : k => v.repository_url }
