@@ -279,12 +279,12 @@ resource "awscc_bedrock_knowledge_base" "ecommerceagent_user_memory" {
 }
 
 
-resource "aws_bedrockagent_data_source" "ecommerceagent_user_memory_data_source" {
+resource "awscc_bedrock_data_source" "ecommerceagent_user_memory_data_source" {
   knowledge_base_id = awscc_bedrock_knowledge_base.ecommerceagent_user_memory.id
   name              = "ecommerceagent_user_memory_data_source"
-  data_source_configuration {
+  data_source_configuration = {
     type = "S3"
-    s3_configuration {
+    s3_configuration = {
       bucket_arn = aws_s3_bucket.kb_bucket.arn
     }
   }
