@@ -261,6 +261,10 @@ resource "aws_bedrockagentcore_agent_runtime" "http_agent_runtime" {
   }
 }
 
+resource "aws_s3_bucket" "kb_ds_bucket" {
+  bucket = "kbds-bucket-${data.aws_caller_identity.current.account_id}"
+}
+
 resource "aws_s3vectors_vector_bucket" "kb_bucket" {
   vector_bucket_name = "kb-bucket-${data.aws_caller_identity.current.account_id}"
 }
@@ -322,6 +326,22 @@ data "aws_iam_policy_document" "ecommerceagent_user_memory_role_permissions" {
     resources = [aws_s3vectors_index.kb_bucket_index.index_arn]
   }
 
+  # S3 Bucket data source permissions
+  statement {
+    sid = "S3BucketOps"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      aws_s3_bucket.kb_ds_bucket.arn,
+      "${aws_s3_bucket.kb_ds_bucket.arn}/*"
+    ]
+  }
+
   # Bucket-level actions take the bucket ARN, not the index ARN — the same
   # two-ARN-shapes split as CloudWatch Logs above.
   statement {
@@ -348,7 +368,7 @@ data "aws_bedrock_foundation_models" "models" {
 }
 
 resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory_kb" {
-  name     = "example-s3vectors-kb"
+  name     = "ecommerceagent-user-memory-kb"
   role_arn = aws_iam_role.ecommerceagent_user_memory_role.arn
 
   knowledge_base_configuration {
@@ -374,6 +394,18 @@ resource "aws_bedrockagent_knowledge_base" "ecommerceagent_user_memory_kb" {
     }
   }
 }
+
+resource "aws_bedrockagent_data_source" "ecommerceagent_user_memory_kb_ds" {
+  knowledge_base_id = aws_bedrockagent_knowledge_base.ecommerceagent_user_memory_kb.id
+  name              = "ecommerceagent-user-memory-kb-ds"
+  data_source_configuration {
+    type = "S3"
+    s3_configuration {
+      bucket_arn = aws_s3_bucket.kb_ds_bucket.arn
+    }
+  }
+}
+
 
 output "ecr_repository_uris" {
   value = { for k, v in aws_ecr_repository.repository : k => v.repository_url }
