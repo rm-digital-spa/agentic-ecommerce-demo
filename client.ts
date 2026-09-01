@@ -1,3 +1,4 @@
+// Simple streaming client to invoke the local agent endpoint.
 async function sendRequest(propmt: string, userEmail: string) {
   const res = await fetch("http://localhost:8000/invoke", {
     method: "POST",
